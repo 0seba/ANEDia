@@ -155,7 +155,7 @@ def convert(config_path: str, tensors_path: str, save_path: str):
     torch_encoder.load_state_dict(encoder_state_dict)
 
     ane_encoder = ANEEncoder(torch_encoder, max_seq_len=config.data.text_length)
-    ane_encoder.layers = ane_encoder.layers[:2] # debug
+    # ane_encoder.layers = ane_encoder.layers[:2] # debug
     text = """
 [S1] Oh fire! Oh my goodness! What's the procedure? What to we do people? The smoke could be coming through an air duct!
 [S2] Oh my god! Okay.. it's happening. Everybody stay calm!
