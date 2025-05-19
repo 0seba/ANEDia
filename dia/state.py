@@ -27,7 +27,7 @@ def create_attn_mask(
     pad_attends_pad = (~p_mask_q) & (~p_mask_k)  # Shape [B, Tq, Tk]
 
     # Combine: True if padding status is compatible (both non-pad OR both pad)
-    mask = non_pad_attends_non_pad | pad_attends_pad  # Shape [B, Tq, Tk]
+    mask = torch.logical_or(non_pad_attends_non_pad, pad_attends_pad)  # Shape [B, Tq, Tk]
 
     if is_causal:
         # assert Tq == Tk, "Causal mask requires query and key sequence lengths to be equal"
