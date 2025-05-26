@@ -76,17 +76,23 @@ def update_kv_cache(
     kv_cache: Tuple[Tensor, Tensor],
     kv_write_idx: Tensor,  # current implementation supports only one contiguous write
     kv_layer_write_idx: int,
+    slice_update_end: Optional[Tensor] = None,
 ):
     # seqlen will be a time runtime constant, we have to create
     # a function for each seqlen or use EnumeratedShapes
-    b, numheads, seqlen, headdim = key.size()
+    b, numheads, _, headdim = key.size()
+    seqlen = key.size(2)
 
     k_cache, v_cache = kv_cache
-    if seqlen == k_cache.size(2):
-        start = 0
-        end = seqlen
+    # if seqlen == k_cache.size(2):
+    #     start = 0
+    #     end = seqlen
+    # else:
+    start = kv_write_idx
+    # end = kv_write_idx + slice_update_end
+    if slice_update_end is not None:
+        end = slice_update_end
     else:
-        start = kv_write_idx
         end = kv_write_idx + seqlen
 
     if k_cache.size(0) == 1:
@@ -94,14 +100,14 @@ def update_kv_cache(
 
     k_cache[
         kv_layer_write_idx : kv_layer_write_idx + b,
-        :numheads,
+        0:numheads,
         start:end,
-        :headdim,
+        0:headdim,
     ] = key
     v_cache[
         kv_layer_write_idx : kv_layer_write_idx + b,
-        :numheads,
-        :headdim,
+        0:numheads,
+        0:headdim,
         start:end,
     ] = value
 

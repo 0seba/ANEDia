@@ -232,7 +232,8 @@ class ANEAttention(nn.Module):
         attn_mask: Optional[Tensor] = None,  # (B, 1, T, S) or None
         cache: Optional[Tuple[Tensor, Tensor]] = None,  # KV Cache for ANE format
         kv_write_idx: Optional[Tensor] = None,
-        kv_layer_write_idx: Optional[int] = None,
+        kv_layer_idx: Optional[int] = None,
+        slice_update_end: Optional[Tensor] = None,
     ) -> Tensor:
         """
         Performs attention calculation with minimal reshaping operations.
@@ -246,7 +247,8 @@ class ANEAttention(nn.Module):
             cache: KV cache tuple
             prefill: Whether this is a prefill operation
             kv_write_idx: Index to write to in KV cache
-            kv_layer_write_idx: Layer index in KV cache
+            kv_layer_idx: Layer index in KV cache
+            slice_update_end: End index for slice update
 
         Returns:
             Tuple of (output tensor, updated KV cache)
@@ -270,8 +272,8 @@ class ANEAttention(nn.Module):
             k_cache, v_cache = cache
             attention_output = simple_attention(
                 q_rotated,
-                k_cache[kv_layer_write_idx : kv_layer_write_idx + batch_size],
-                v_cache[kv_layer_write_idx : kv_layer_write_idx + batch_size],
+                k_cache[kv_layer_idx : kv_layer_idx + batch_size],
+                v_cache[kv_layer_idx : kv_layer_idx + batch_size],
                 attention_mask=attn_mask,
             )
         else:
@@ -289,11 +291,16 @@ class ANEAttention(nn.Module):
             # print("v_proj permute size:", v_proj.size())
             if cache is not None:
                 update_kv_cache(
-                    k_rotated, v_proj, cache, kv_write_idx, kv_layer_write_idx
+                    k_rotated,
+                    v_proj,
+                    cache,
+                    kv_write_idx,
+                    kv_layer_idx,
+                    slice_update_end,
                 )
                 k_cache, v_cache = cache
-                key = k_cache[kv_layer_write_idx : kv_layer_write_idx + batch_size]
-                value = v_cache[kv_layer_write_idx : kv_layer_write_idx + batch_size]
+                key = k_cache[kv_layer_idx : kv_layer_idx + batch_size]
+                value = v_cache[kv_layer_idx : kv_layer_idx + batch_size]
             else:
                 key = k_rotated
                 value = v_proj
